@@ -15,6 +15,9 @@ function advanced_market.save_data()
 	if advanced_market.data.buffers == nil then
 		advanced_market.data.buffers = {}
 	end
+	if advanced_market.data.orders == nil then
+		advanced_market.data.orders = {}
+	end
 	local output = io.open(minetest.get_worldpath() .. "/advanced_market","w")
 	output:write(minetest.serialize(advanced_market.data))
 	io.close(output)
@@ -28,6 +31,7 @@ function advanced_market.initialize()
 	else --first run; create the data file
 		advanced_market.save_data()
 	end
+	advanced_market.save_data()
 end
 
 function advanced_market.order(orderer,item,amount,price,ordertype)
@@ -38,48 +42,48 @@ function advanced_market.order(orderer,item,amount,price,ordertype)
 		end
 	end
 	--pick an order number
-	local order_number = advanced_market.data.max_order_number 
+	local order_number = advanced_market.data.max_order_number or 1
 	advanced_market.data.max_order_number = order_number + 1
 	--initialize some stuff in the buffer if it's the orderer's first order
 	if advanced_market.data.buffers[orderer] == nil then
-		advanced_market.buffers[orderer] = {}
+		advanced_market.data.buffers[orderer] = {}
 	end
 	if advanced_market.data.buffers[orderer].out == nil then
-		advanced_market.buffers[orderer].out = {}
+		advanced_market.data.buffers[orderer].out = {}
 	end
 	if advanced_market.data.buffers[orderer].into == nil then
-		advanced_market.buffers[orderer].into = {}
+		advanced_market.data.buffers[orderer].into = {}
 	end
 	if advanced_market.data.buffers[orderer].out.money == nil then
-		advanced_market.buffers[orderer].out.money = 0
+		advanced_market.data.buffers[orderer].out.money = 0
 	end
 	if advanced_market.data.buffers[orderer].out.items == nil then
-		advanced_market.buffers[orderer].out.items = {}
+		advanced_market.data.buffers[orderer].out.items = {}
 	end
 	if advanced_market.data.buffers[orderer].out.items[item] == nil then
-		advanced_market.buffers[orderer].out.items[item] = 0
+		advanced_market.data.buffers[orderer].out.items[item] = 0
 	end
 	if advanced_market.data.buffers[orderer].into.money == nil then
-		advanced_market.buffers[orderer].into.money = 0
+		advanced_market.data.buffers[orderer].into.money = 0
 	end
 	if advanced_market.data.buffers[orderer].into.items == nil then
-		advanced_market.buffers[orderer].into.items = {}
+		advanced_market.data.buffers[orderer].into.items = {}
 	end
 	if advanced_market.data.buffers[orderer].into.items[item] == nil then
-		advanced_market.buffers[orderer].into.items[item] = 0
+		advanced_market.data.buffers[orderer].into.items[item] = 0
 	end
 	--add some stuff to the buffer
 	if ordertype == "buy" then
 		advanced_market.data.buffers[orderer].out.money =  advanced_market.data.buffers[orderer].out.money + amount * price
+		money.set_money(orderer,money.get_money(orderer) - amount * price)
 	else -- ordertype is sell
 		advanced_market.data.buffers[orderer].out.items[item] = advanced_market.data.buffers[orderer].out.items[item] + amount
 	end
 	--add to the orders list
 	advanced_market.save_order(order_number,orderer,item,amount,price,ordertype,amount)
+	advanced_market.save_order_in_stack(order_number,orderer,item,amount,price,ordertype,amount)
 	--process the order in stack
-	if not advanced_market.search_for_target_order_in_stack(item,price,ordertype) then
-		advanced_market.save_order_in_stack(order_number,orderer,item,amount,price,ordertype,amount)
-	else
+	if advanced_market.search_for_target_order_in_stack(item,price,ordertype) then
 		while true do
 			local target_order_number = advanced_market.search_for_target_order_in_stack(item,price,ordertype)
 			advanced_market.transact(order_number,target_order_number,item)
@@ -103,7 +107,7 @@ function advanced_market.save_order(order_number,orderer,item,amount,price,order
 	advanced_market.save_data()
 end
 
-function advanced_market.save_order_in_stack(order_number_,orderer,item,amount,price,ordertype,amount_left)
+function advanced_market.save_order_in_stack(order_number,orderer,item,amount,price,ordertype,amount_left)
 	if advanced_market.data.stacks[item] == nil then
 		advanced_market.data.stacks[item] = {}
 	end
@@ -127,25 +131,36 @@ function advanced_market.search_for_target_order_in_stack(item,price,ordertype)
 	end
 	local best_order_number = 0
 	if ordertype == "buy" then
-		local target_ordertype == "sell"
+		target_ordertype = "sell"
 	else
-		local target_ordertype == "buy"
+		target_ordertype = "buy"
 	end
-	for order_number , content in pairs(advanced_market.data.stacks.[item]) do
-		if ordertype == "buy" then
-			if content.price > (advanced_market.data.stacks[item][best_order_number].price or price) then
+	for order_number , content in pairs(advanced_market.data.stacks[item]) do
+		if advanced_market.data.stacks[item][best_order_number] == nil then
+			best_price = price
+		else
+			best_price = advanced_market.data.stacks[item][best_order_number].price
+		end
+		if target_ordertype == "buy" then
+			print("a")
+			if content.ordertype == "buy" then
+			if content.price > best_price then
 				best_order_number = order_number
-			else if (content.price = (advanced_market.data.stacks[item][best_order_number].price or price)) and (order_number < best_order_number) then
+			else if (content.price == best_price) and ((order_number < best_order_number) or (best_order_number == 0 )) then
 				best_order_number = order_number
 			end
 		end
-	else -- ordertype is sell
-		if content.price < (advanced_market.data.stacks[item][best_order_number].price or price) then
+	end
+	else -- target ordertype is sell
+		print("b")
+		if content.ordertype == "sell" then
+		if content.price < best_price then
 			best_order_number = order_number
-		else if (content.price = (advanced_market.data.stacks[item][best_order_number].price or price)) and (order_number < best_order_number) then
+		else if (content.price == best_price) and ((order_number < best_order_number) or (best_order_number == 0)) then
 			best_order_number = order_number
 		end
 	end
+end
 end
 end
 if best_order_number == 0 then
@@ -156,6 +171,9 @@ end
 end
 
 function advanced_market.transact(order_number,target_order_number,item)
+	print(order_number)
+	print(target_order_number)
+	print(item)
 	local orderer = advanced_market.data.orders[order_number].orderer
 	local target_orderer = advanced_market.data.orders[target_order_number].orderer
 	local price = advanced_market.data.orders[target_order_number].price
@@ -173,16 +191,56 @@ function advanced_market.transact(order_number,target_order_number,item)
 		--set the money and item
 		advanced_market.data.buffers[orderer].out.money = advanced_market.data.buffers[orderer].out.money - transaction_amount * price
 		advanced_market.data.buffers[target_orderer].into.money = advanced_market.data.buffers[target_orderer].into.money + transaction_amount * price
-		advanced_market.data.buffers[orderer].into.items[item] = advanced_market.data.buffers[orderer].into.items[item] - transaction_amount
+		advanced_market.data.buffers[orderer].into.items[item] = advanced_market.data.buffers[orderer].into.items[item] + transaction_amount
 		advanced_market.data.buffers[target_orderer].out.items[item] = advanced_market.data.buffers[target_orderer].out.items[item] - transaction_amount
 	else --ordertype is sell
 		--set the money and item
 		advanced_market.data.buffers[orderer].into.money = advanced_market.data.buffers[orderer].into.money + transaction_amount * price
 		advanced_market.data.buffers[target_orderer].out.money = advanced_market.data.buffers[target_orderer].out.money - transaction_amount * price
-		advanced_market.data.buffers[orderer].out.items[item] = advanced_market.data.buffers[orderer].out.items[item] + transaction_amount
+		advanced_market.data.buffers[orderer].out.items[item] = advanced_market.data.buffers[orderer].out.items[item] - transaction_amount
 		advanced_market.data.buffers[target_orderer].into.items[item] = advanced_market.data.buffers[target_orderer].into.items[item] + transaction_amount
 	end
 	advanced_market.save_data()
 end
 
+function advanced_market.remove_order_from_stack(order_number)
+	advanced_market.data.stacks[advanced_market.data.orders[order_number].item][order_number] = nil
+end
+
 advanced_market.initialize()
+
+minetest.register_chatcommand("advanced_market", {
+	params = "[buy <item> <amount> <price> | sell <price> | viewstack <item> | viewbuffer | refreshbuffer]",
+	description = "trade on the market",
+	func = function(name,param)
+		local t = string.split(param, " ")
+		if t[1] == "buy" then
+			advanced_market.order(name,t[2],tonumber(t[3]),tonumber(t[4]),"buy")
+		end
+		if t[1] == "sell" then
+			local player = minetest.get_player_by_name(name)
+			local wielditem = player:get_wielded_item()
+			local wieldname = wielditem:get_name()
+			local wieldcount = wielditem:get_count()
+			advanced_market.order(name,wieldname,wieldcount,tonumber(t[2]),"sell")
+			player:set_wielded_item(ItemStack(""))
+		end
+		if t[1] == "viewstack" then
+			minetest.chat_send_player(name,minetest.serialize(advanced_market.data.stacks[t[2]]))
+		end
+		if t[1] == "viewbuffer" then
+			minetest.chat_send_player(name,minetest.serialize(advanced_market.data.buffers[name]))
+		end
+		if t[1] == "refreshbuffer" then
+			local player = minetest.get_player_by_name(name)
+			local playerinv = player:get_inventory()
+			for k,v in pairs(advanced_market.data.buffers[name].into.items) do 
+				playerinv:add_item("main",ItemStack(tostring(k).." "..tostring(v)))
+				advanced_market.data.buffers[name].into.items[k] = 0 
+			end
+		money.set_money(name,money.get_money(name) + advanced_market.data.buffers[name].into.money)
+		advanced_market.data.buffers[name].into.money = 0
+		end
+		advanced_market.save_data()
+	end
+})
