@@ -142,7 +142,6 @@ function advanced_market.search_for_target_order_in_stack(item,price,ordertype)
 			best_price = advanced_market.data.stacks[item][best_order_number].price
 		end
 		if target_ordertype == "buy" then
-			print("a")
 			if content.ordertype == "buy" then
 			if content.price > best_price then
 				best_order_number = order_number
@@ -152,7 +151,6 @@ function advanced_market.search_for_target_order_in_stack(item,price,ordertype)
 		end
 	end
 	else -- target ordertype is sell
-		print("b")
 		if content.ordertype == "sell" then
 		if content.price < best_price then
 			best_order_number = order_number
@@ -171,9 +169,6 @@ end
 end
 
 function advanced_market.transact(order_number,target_order_number,item)
-	print(order_number)
-	print(target_order_number)
-	print(item)
 	local orderer = advanced_market.data.orders[order_number].orderer
 	local target_orderer = advanced_market.data.orders[target_order_number].orderer
 	local price = advanced_market.data.orders[target_order_number].price
