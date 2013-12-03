@@ -45,6 +45,7 @@ function advanced_market.order(orderer,item,amount,price,ordertype)
 	local order_number = advanced_market.data.max_order_number or 1
 	advanced_market.data.max_order_number = order_number + 1
 	--initialize some stuff in the buffer if it's the orderer's first order
+	--into: everything going in; out: everything goint out(money to be paid etc.)
 	if advanced_market.data.buffers[orderer] == nil then
 		advanced_market.data.buffers[orderer] = {}
 	end
@@ -204,7 +205,7 @@ end
 
 advanced_market.initialize()
 
-minetest.register_chatcommand("advanced_market", {
+local register_chatcommand_table = {
 	params = "[buy <item> <amount> <price> | sell <price> | viewstack <item> | viewbuffer | refreshbuffer]",
 	description = "trade on the market",
 	func = function(name,param)
@@ -238,76 +239,9 @@ minetest.register_chatcommand("advanced_market", {
 		end
 		advanced_market.save_data()
 	end
-})
+}
+minetest.register_chatcommand("advanced_market", register_chatcommand_table)
 
-minetest.register_chatcommand("am", {
-	params = "[buy <item> <amount> <price> | sell <price> | viewstack <item> | viewbuffer | refreshbuffer]",
-	description = "trade on the market",
-	func = function(name,param)
-		local t = string.split(param, " ")
-		if t[1] == "buy" then
-			advanced_market.order(name,t[2],tonumber(t[3]),tonumber(t[4]),"buy")
-		end
-		if t[1] == "sell" then
-			local player = minetest.get_player_by_name(name)
-			local wielditem = player:get_wielded_item()
-			local wieldname = wielditem:get_name()
-			local wieldcount = wielditem:get_count()
-			advanced_market.order(name,wieldname,wieldcount,tonumber(t[2]),"sell")
-			player:set_wielded_item(ItemStack(""))
-		end
-		if t[1] == "viewstack" then
-			minetest.chat_send_player(name,minetest.serialize(advanced_market.data.stacks[t[2]]))
-		end
-		if t[1] == "viewbuffer" then
-			minetest.chat_send_player(name,minetest.serialize(advanced_market.data.buffers[name]))
-		end
-		if t[1] == "refreshbuffer" then
-			local player = minetest.get_player_by_name(name)
-			local playerinv = player:get_inventory()
-			for k,v in pairs(advanced_market.data.buffers[name].into.items) do 
-				playerinv:add_item("main",ItemStack(tostring(k).." "..tostring(v)))
-				advanced_market.data.buffers[name].into.items[k] = 0 
-			end
-		money.set_money(name,money.get_money(name) + advanced_market.data.buffers[name].into.money)
-		advanced_market.data.buffers[name].into.money = 0
-		end
-		advanced_market.save_data()
-	end
-})
+minetest.register_chatcommand("am", register_chatcommand_table)
 
-minetest.register_chatcommand("amarket", {
-	params = "[buy <item> <amount> <price> | sell <price> | viewstack <item> | viewbuffer | refreshbuffer]",
-	description = "trade on the market",
-	func = function(name,param)
-		local t = string.split(param, " ")
-		if t[1] == "buy" then
-			advanced_market.order(name,t[2],tonumber(t[3]),tonumber(t[4]),"buy")
-		end
-		if t[1] == "sell" then
-			local player = minetest.get_player_by_name(name)
-			local wielditem = player:get_wielded_item()
-			local wieldname = wielditem:get_name()
-			local wieldcount = wielditem:get_count()
-			advanced_market.order(name,wieldname,wieldcount,tonumber(t[2]),"sell")
-			player:set_wielded_item(ItemStack(""))
-		end
-		if t[1] == "viewstack" then
-			minetest.chat_send_player(name,minetest.serialize(advanced_market.data.stacks[t[2]]))
-		end
-		if t[1] == "viewbuffer" then
-			minetest.chat_send_player(name,minetest.serialize(advanced_market.data.buffers[name]))
-		end
-		if t[1] == "refreshbuffer" then
-			local player = minetest.get_player_by_name(name)
-			local playerinv = player:get_inventory()
-			for k,v in pairs(advanced_market.data.buffers[name].into.items) do 
-				playerinv:add_item("main",ItemStack(tostring(k).." "..tostring(v)))
-				advanced_market.data.buffers[name].into.items[k] = 0 
-			end
-		money.set_money(name,money.get_money(name) + advanced_market.data.buffers[name].into.money)
-		advanced_market.data.buffers[name].into.money = 0
-		end
-		advanced_market.save_data()
-	end
-})
+minetest.register_chatcommand("amarket", register_chatcommand_table)
