@@ -224,6 +224,12 @@ local register_chatcommand_table = {
 			advanced_market.order(name,wieldname,wieldcount,tonumber(t[2]),"sell")
 			player:set_wielded_item(ItemStack(""))
 		end
+		if t[1] == "getname" then
+			local player = minetest.get_player_by_name(name)
+			local wielditem = player:get_wielded_item()
+			local wieldname = wielditem:get_name()
+			minetest.chat_send_player(name,wieldname)
+		end
 		if t[1] == "viewlog" then
 			minetest.chat_send_player(name,advanced_market.data.log)
 		end
