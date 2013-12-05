@@ -8,19 +8,25 @@ Howto:
 
 Command can be /am, /amarket or /advanced\_market
 Sell the stuff you're holding:
-/am sell <price>
+/am sell PRICE
 e.g. /am sell 5
 
 Buy some stuff:
-/am buy <item> <amount> <price>
+/am buy ITEM AMOUNT PRICE
 e.g. /am buy default:dirt 1 5
 
 View available orders of one item:
-/am viewstack <item>
+/am viewstack ITEM
 e.g. /am viewstack default:dirt
 
 View your buffer:
 /am viewbuffer
+
+Get the engine name of wielditem
+/am getname
+
+View the log:
+/am viewlog
 
 Move all the stuff in your buffer into your inventory:
 /am refreshbuffer
