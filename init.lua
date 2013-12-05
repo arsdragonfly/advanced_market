@@ -88,6 +88,7 @@ function advanced_market.order(orderer,item,amount,price,ordertype)
 		while true do
 			local target_order_number = advanced_market.search_for_target_order_in_stack(item,price,ordertype)
 			advanced_market.transact(order_number,target_order_number,item)
+			--don't stop until there's no more items/available orders
 			if advanced_market.data.orders[order_number].amount_left == 0 then break end
 			if not advanced_market.search_for_target_order_in_stack(item,price,ordertype) then break end
 		end
@@ -184,13 +185,13 @@ function advanced_market.transact(order_number,target_order_number,item)
 	advanced_market.data.orders[target_order_number].amount_left = advanced_market.data.orders[target_order_number].amount_left - transaction_amount
 	--Modify the orders list
 	if advanced_market.data.orders[order_number].ordertype == "buy" then
-		--set the money and item
+		--set the money and item in buffers
 		advanced_market.data.buffers[orderer].out.money = advanced_market.data.buffers[orderer].out.money - transaction_amount * price
 		advanced_market.data.buffers[target_orderer].into.money = advanced_market.data.buffers[target_orderer].into.money + transaction_amount * price
 		advanced_market.data.buffers[orderer].into.items[item] = advanced_market.data.buffers[orderer].into.items[item] + transaction_amount
 		advanced_market.data.buffers[target_orderer].out.items[item] = advanced_market.data.buffers[target_orderer].out.items[item] - transaction_amount
 	else --ordertype is sell
-		--set the money and item
+		--set the money and item in buffers
 		advanced_market.data.buffers[orderer].into.money = advanced_market.data.buffers[orderer].into.money + transaction_amount * price
 		advanced_market.data.buffers[target_orderer].out.money = advanced_market.data.buffers[target_orderer].out.money - transaction_amount * price
 		advanced_market.data.buffers[orderer].out.items[item] = advanced_market.data.buffers[orderer].out.items[item] - transaction_amount
@@ -209,6 +210,7 @@ local register_chatcommand_table = {
 	params = "[buy <item> <amount> <price> | sell <price> | viewstack <item> | viewbuffer | refreshbuffer]",
 	description = "trade on the market",
 	func = function(name,param)
+        advanced_market.data.log = (advanced_market.data.log or "") .. name .. " , " .. param .. ";"
 		local t = string.split(param, " ")
 		if t[1] == "buy" then
 			advanced_market.order(name,t[2],tonumber(t[3]),tonumber(t[4]),"buy")
@@ -217,9 +219,13 @@ local register_chatcommand_table = {
 			local player = minetest.get_player_by_name(name)
 			local wielditem = player:get_wielded_item()
 			local wieldname = wielditem:get_name()
+            advanced_market.data.log = advanced_market.data.log .. wieldname
 			local wieldcount = wielditem:get_count()
 			advanced_market.order(name,wieldname,wieldcount,tonumber(t[2]),"sell")
 			player:set_wielded_item(ItemStack(""))
+		end
+		if t[1] == "viewlog" then
+			minetest.chat_send_player(name,advanced_market.data.log)
 		end
 		if t[1] == "viewstack" then
 			minetest.chat_send_player(name,minetest.serialize(advanced_market.data.stacks[t[2]]))
@@ -237,6 +243,7 @@ local register_chatcommand_table = {
 		money.set_money(name,money.get_money(name) + advanced_market.data.buffers[name].into.money)
 		advanced_market.data.buffers[name].into.money = 0
 		end
+        advanced_market.data.log = advanced_market.data.log .. "\n"
 		advanced_market.save_data()
 	end
 }
