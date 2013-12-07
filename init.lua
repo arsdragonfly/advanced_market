@@ -204,10 +204,31 @@ function advanced_market.remove_order_from_stack(order_number)
 	advanced_market.data.stacks[advanced_market.data.orders[order_number].item][order_number] = nil
 end
 
+function advanced_market.cancel_order(order_number)
+	advanced_market.remove_order_from_stack(order_number)
+	local orderer = advanced_market.data.orders[order_number].orderer
+	local itemname = advanced_market.data.orders[order_number].item
+	local amount_left = advanced_market.data.orders[order_number].amount_left
+	local price = advanced_market.data.orders[order_number].price
+	local ordertype = advanced_market.data.orders[order_number].ordertype
+	local buffer = advanced_market.data.buffers[name]
+	if ordertype == "buy" then
+		if buffer.into.money == nil then buffer.into.money = 0 end
+		buffer.into.money = buffer.into.money + amount_left * price
+		buffer.out.money = buffer.out.money - amount_left * price
+	else
+		if buffer.into.items[itemname] == nil then buffer.into.items[itemname] = 0 end
+		buffer.into.items[itemname] = buffer.into.items[itemname] + amount_left 
+		buffer.out.items[itemname] = buffer.into.items[itemname] - amount_left 
+	end
+	advanced_market.data.orders[order_number].amount_left = 0
+	advanced_market.save_data()
+end
+
 advanced_market.initialize()
 
 local register_chatcommand_table = {
-	params = "[buy <item> <amount> <price> | sell <price> | viewstack <item> | viewbuffer | refreshbuffer]",
+	params = "[buy <item> <amount> <price> | sell <price> | viewstack <item> | viewbuffer | refreshbuffer | getname | viewlog | cancelorder <ordernumber>]",
 	description = "trade on the market",
 	func = function(name,param)
         advanced_market.data.log = (advanced_market.data.log or "") .. name .. " , " .. param .. ";"
@@ -229,6 +250,9 @@ local register_chatcommand_table = {
 			local wielditem = player:get_wielded_item()
 			local wieldname = wielditem:get_name()
 			minetest.chat_send_player(name,wieldname)
+		end
+		if t[1] == "cancelorder" then
+			advanced_market.cancel_order(tonumber(t[2]))
 		end
 		if t[1] == "viewlog" then
 			minetest.chat_send_player(name,advanced_market.data.log)
