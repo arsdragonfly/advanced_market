@@ -4,6 +4,7 @@ This mod allows you to trade in minetest as if you were in a stock market.
 Dependencies:
 money
 locked\_sign
+
 Howto:
 
 Command can be /am, /amarket or /advanced\_market
@@ -22,7 +23,7 @@ e.g. /am viewstack default:dirt
 View your buffer:
 /am viewbuffer
 
-Get the engine name of wielditem
+Get the engine name of wielditem:
 /am getname
 
 View the log:
