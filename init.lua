@@ -6,7 +6,7 @@ advanced_market = {}
 advanced_market.data = {}
 
 function advanced_market.save_data()
-	if advanced_market.data.orders == nil then
+	if advanced_market.data == nil then
 		advanced_market.data = {}
 	end
 	if advanced_market.data.stacks == nil then
@@ -225,6 +225,16 @@ function advanced_market.cancel_order(order_number)
 	advanced_market.save_data()
 end
 
+function advanced_market.view_orders(orderer)
+	local orderstring = ""
+	for order_number,order in pairs(advanced_market.data.orders) do
+		if order.orderer == orderer then
+			orderstring = orderstring .. order_number .. " | " .. minetest.serialize(order) .. "\n"
+		end
+	end
+	return orderstring
+end
+
 advanced_market.initialize()
 
 local register_chatcommand_table = {
@@ -253,6 +263,9 @@ local register_chatcommand_table = {
 		end
 		if t[1] == "cancelorder" then
 			advanced_market.cancel_order(tonumber(t[2]))
+		end
+		if t[1] == "vieworder" then
+			minetest.chat_send_player(name,advanced_market.view_orders(name))
 		end
 		if t[1] == "viewlog" then
 			minetest.chat_send_player(name,advanced_market.data.log)
