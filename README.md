@@ -29,6 +29,14 @@ Get the engine name of wielditem:
 View the log:
 /am viewlog
 
+View your orders:
+/am vieworder
+(output will be like: ORDERNUMBER | blah blah blah)
+
+Cancel an order:
+/am cancelorder ORDERNUMBER
+e.g. /am cancelorder 1
+
 Move all the stuff in your buffer into your inventory:
 /am refreshbuffer
 
