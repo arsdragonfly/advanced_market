@@ -1,6 +1,7 @@
 advanced\_market
 ===============
 This mod allows you to trade in minetest as if you were in a stock market.
+License: CC0
 Dependencies:
 money
 locked\_sign
