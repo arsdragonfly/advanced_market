@@ -26,10 +26,8 @@ end
 function advanced_market.initialize()
 	local input = io.open(minetest.get_worldpath() .. "/advanced_market","r")
 	if input then
-		advanced_market.data = minetest.deserialize(input:read("*l"))
+		advanced_market.data = minetest.deserialize(input:read("*all"))
 		io.close(input)
-	else --first run; create the data file
-		advanced_market.save_data()
 	end
 	advanced_market.save_data()
 end
@@ -49,7 +47,7 @@ function advanced_market.order(orderer,item,amount,price,ordertype)
 	if advanced_market.data.buffers[orderer] == nil then
 		advanced_market.data.buffers[orderer] = {}
 	end
-	local buffer = advanced_market.data.buffers[orderer] 
+	local buffer = advanced_market.data.buffers[orderer]
 	if buffer.out == nil then
 		buffer.out = {}
 	end
@@ -101,7 +99,7 @@ function advanced_market.save_order(order_number,orderer,item,amount,price,order
 	if advanced_market.data.orders[order_number] == nil then
 		advanced_market.data.orders[order_number] = {}
 	end
-	local order = advanced_market.data.orders[order_number] 
+	local order = advanced_market.data.orders[order_number]
 	order.orderer = orderer
 	order.item = item
 	order.amount = amount
@@ -182,7 +180,7 @@ function advanced_market.transact(order_number,target_order_number,item)
 	local target_orderer_buffer = advanced_market.data.buffers[target_orderer]
 	local price = target_order.price
 	local order_stack_entry = advanced_market.data.stacks[item][order_number]
-	local target_order_stack_entry = target_order_stack_entry
+	local target_order_stack_entry = advanced_market.data.stacks[item][target_order_number]
 	local transaction_amount = (order_stack_entry.amount_left < target_order_stack_entry.amount_left) and order_stack_entry.amount_left or target_order_stack_entry.amount_left
 	--choose the smaller one of the two order numbers as the transaction amount; .. and .. or .. is a ternary operator
 	order_stack_entry.amount_left = order_stack_entry.amount_left - transaction_amount
@@ -227,8 +225,8 @@ function advanced_market.cancel_order(order_number)
 		buffer.out.money = buffer.out.money - amount_left * price
 	else
 		if buffer.into.items[itemname] == nil then buffer.into.items[itemname] = 0 end
-		buffer.into.items[itemname] = buffer.into.items[itemname] + amount_left 
-		buffer.out.items[itemname] = buffer.into.items[itemname] - amount_left 
+		buffer.into.items[itemname] = buffer.into.items[itemname] + amount_left
+		buffer.out.items[itemname] = buffer.into.items[itemname] - amount_left
 	end
 	advanced_market.data.orders[order_number].amount_left = 0
 	advanced_market.save_data()
@@ -288,9 +286,9 @@ local register_chatcommand_table = {
 		if t[1] == "refreshbuffer" then
 			local player = minetest.get_player_by_name(name)
 			local playerinv = player:get_inventory()
-			for k,v in pairs(advanced_market.data.buffers[name].into.items) do 
+			for k,v in pairs(advanced_market.data.buffers[name].into.items) do
 				playerinv:add_item("main",ItemStack(tostring(k).." "..tostring(v)))
-				advanced_market.data.buffers[name].into.items[k] = 0 
+				advanced_market.data.buffers[name].into.items[k] = 0
 			end
 		money.set_money(name,money.get_money(name) + advanced_market.data.buffers[name].into.money)
 		advanced_market.data.buffers[name].into.money = 0
