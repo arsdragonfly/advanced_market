@@ -201,13 +201,17 @@ function advanced_market.transact(order_number,target_order_number,item)
 			orderer_buffer.into.money = orderer_buffer.into.money + transaction_amount * (orderer_price - price)
 		end
 		orderer_buffer.into.items[item] = orderer_buffer.into.items[item] + transaction_amount
+		if orderer_buffer.into.items[item] == 0 then orderer_buffer.into.items[item] = nil end
 		target_orderer_buffer.out.items[item] = target_orderer_buffer.out.items[item] - transaction_amount
+		if orderer_buffer.out.items[item] == 0 then orderer_buffer.out.items[item] = nil end
 	else --ordertype is sell
 		--set the money and item in buffers
 		orderer_buffer.into.money = orderer_buffer.into.money + transaction_amount * price
 		target_orderer_buffer.out.money = target_orderer_buffer.out.money - transaction_amount * price
 		orderer_buffer.out.items[item] = orderer_buffer.out.items[item] - transaction_amount
+		if orderer_buffer.out.items[item] == 0 then orderer_buffer.out.items[item] = nil end
 		target_orderer_buffer.into.items[item] = target_orderer_buffer.into.items[item] + transaction_amount
+		if orderer_buffer.into.items[item] == 0 then orderer_buffer.into.items[item] = nil end
 	end
 	advanced_market.save_data()
 end
@@ -293,7 +297,7 @@ local register_chatcommand_table = {
 			local playerinv = player:get_inventory()
 			for k,v in pairs(advanced_market.data.buffers[name].into.items) do
 				playerinv:add_item("main",ItemStack(tostring(k).." "..tostring(v)))
-				advanced_market.data.buffers[name].into.items[k] = 0
+				advanced_market.data.buffers[name].into.items[k] = nil
 			end
 			money.set_money(name,money.get_money(name) + advanced_market.data.buffers[name].into.money)
 			advanced_market.data.buffers[name].into.money = 0
