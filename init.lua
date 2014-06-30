@@ -146,22 +146,22 @@ function advanced_market.search_for_target_order_in_stack(item,price,ordertype)
 		end
 		if target_ordertype == "buy" then
 			if content.ordertype == "buy" then
-			if content.price > best_price then
+				if content.price > best_price then
+					best_order_number = order_number
+				else if (content.price == best_price) and ((order_number < best_order_number) or (best_order_number == 0 )) then
+					best_order_number = order_number
+				end
+			end
+		end
+	else -- target ordertype is sell
+		if content.ordertype == "sell" then
+			if content.price < best_price then
 				best_order_number = order_number
-			else if (content.price == best_price) and ((order_number < best_order_number) or (best_order_number == 0 )) then
+			else if (content.price == best_price) and ((order_number < best_order_number) or (best_order_number == 0)) then
 				best_order_number = order_number
 			end
 		end
 	end
-	else -- target ordertype is sell
-		if content.ordertype == "sell" then
-		if content.price < best_price then
-			best_order_number = order_number
-		else if (content.price == best_price) and ((order_number < best_order_number) or (best_order_number == 0)) then
-			best_order_number = order_number
-		end
-	end
-end
 end
 end
 if best_order_number == 0 then
@@ -179,6 +179,7 @@ function advanced_market.transact(order_number,target_order_number,item)
 	local orderer_buffer = advanced_market.data.buffers[orderer]
 	local target_orderer_buffer = advanced_market.data.buffers[target_orderer]
 	local price = target_order.price
+	local orderer_price = order.price
 	local order_stack_entry = advanced_market.data.stacks[item][order_number]
 	local target_order_stack_entry = advanced_market.data.stacks[item][target_order_number]
 	local transaction_amount = (order_stack_entry.amount_left < target_order_stack_entry.amount_left) and order_stack_entry.amount_left or target_order_stack_entry.amount_left
@@ -195,6 +196,10 @@ function advanced_market.transact(order_number,target_order_number,item)
 		--set the money and item in buffers
 		orderer_buffer.out.money = orderer_buffer.out.money - transaction_amount * price
 		target_orderer_buffer.into.money = target_orderer_buffer.into.money + transaction_amount * price
+		if order_price ~= price then --the orderer offered a surplus amount of money
+			orderer_buffer.out.money = orderer_buffer.out.money - transaction_amount * (orderer_price - price)
+			orderer_buffer.into.money = orderer_buffer.into.money + transaction_amount * (orderer_price - price)
+		end
 		orderer_buffer.into.items[item] = orderer_buffer.into.items[item] + transaction_amount
 		target_orderer_buffer.out.items[item] = target_orderer_buffer.out.items[item] - transaction_amount
 	else --ordertype is sell
@@ -248,7 +253,7 @@ local register_chatcommand_table = {
 	params = "[buy <item> <amount> <price> | sell <price> | viewstack <item> | viewbuffer | refreshbuffer | getname | viewlog | cancelorder <ordernumber>]",
 	description = "trade on the market",
 	func = function(name,param)
-        advanced_market.data.log = (advanced_market.data.log or "") .. name .. " , " .. param .. ";"
+		advanced_market.data.log = (advanced_market.data.log or "") .. name .. " , " .. param .. ";"
 		local t = string.split(param, " ")
 		if t[1] == "buy" then
 			advanced_market.order(name,t[2],tonumber(t[3]),tonumber(t[4]),"buy")
@@ -257,7 +262,7 @@ local register_chatcommand_table = {
 			local player = minetest.get_player_by_name(name)
 			local wielditem = player:get_wielded_item()
 			local wieldname = wielditem:get_name()
-            advanced_market.data.log = advanced_market.data.log .. wieldname
+			advanced_market.data.log = advanced_market.data.log .. wieldname
 			local wieldcount = wielditem:get_count()
 			advanced_market.order(name,wieldname,wieldcount,tonumber(t[2]),"sell")
 			player:set_wielded_item(ItemStack(""))
@@ -290,10 +295,10 @@ local register_chatcommand_table = {
 				playerinv:add_item("main",ItemStack(tostring(k).." "..tostring(v)))
 				advanced_market.data.buffers[name].into.items[k] = 0
 			end
-		money.set_money(name,money.get_money(name) + advanced_market.data.buffers[name].into.money)
-		advanced_market.data.buffers[name].into.money = 0
+			money.set_money(name,money.get_money(name) + advanced_market.data.buffers[name].into.money)
+			advanced_market.data.buffers[name].into.money = 0
 		end
-        advanced_market.data.log = advanced_market.data.log .. "\n"
+		advanced_market.data.log = advanced_market.data.log .. "\n"
 		advanced_market.save_data()
 	end
 }
