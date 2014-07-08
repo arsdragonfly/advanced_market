@@ -32,7 +32,9 @@ function advanced_market.initialize()
 	advanced_market.save_data()
 end
 
-function advanced_market.initialize(orderer,item)
+function advanced_market.initialize_buffer(orderer,item)
+	--initialize some stuff in the buffer if it's the orderer's first order
+	--into: everything going in; out: everything goint out(money to be paid etc.)
 	if advanced_market.data.buffers[orderer] == nil then
 		advanced_market.data.buffers[orderer] = {}
 	end
@@ -71,10 +73,9 @@ function advanced_market.order(orderer,item,amount,price,ordertype)
 	--pick an order number
 	local order_number = advanced_market.data.max_order_number or 1
 	advanced_market.data.max_order_number = order_number + 1
-	--initialize some stuff in the buffer if it's the orderer's first order
-	--into: everything going in; out: everything goint out(money to be paid etc.)
 	advanced_market.initialize_buffer(orderer,item)
 	--add some stuff to the buffer
+	local buffer = advanced_market.data.buffers[orderer]
 	if ordertype == "buy" then
 		buffer.out.money =  buffer.out.money + amount * price
 		money.set_money(orderer,money.get_money(orderer) - amount * price)
