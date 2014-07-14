@@ -254,6 +254,15 @@ function advanced_market.view_orders(orderer)
 	return orderstring
 end
 
+function advanced_market.check_params(name,func,params)
+	local stat,msg = func(params)
+	if not stat then
+		minetest.chat_send_player(name,msg)
+		return false
+	end
+	return true
+end
+
 advanced_market.initialize()
 
 local register_chatcommand_table = {
@@ -263,7 +272,21 @@ local register_chatcommand_table = {
 		advanced_market.data.log = (advanced_market.data.log or "") .. name .. " , " .. param .. ";"
 		local t = string.split(param, " ")
 		if t[1] == "buy" then
-			advanced_market.order(name,t[2],tonumber(t[3]),tonumber(t[4]),"buy")
+			if not advanced_market.check_params(
+				name,
+				function (params)
+					if not tonumber(params[3]) or
+						not tonumber(params[4]) or
+						not ((tonumber(params[3])) >= 1) or
+						not ((tonumber(params[4])) >= 1) then
+						return false,[[
+						ERROR: amount and/or price is not correct number
+						]]
+					end
+					return true
+				end,
+				t) then return end
+			advanced_market.order(name,t[2],math.floor(tonumber(t[3])),math.floor(tonumber(t[4])),"buy")
 		end
 		if t[1] == "sell" then
 			local player = minetest.get_player_by_name(name)
@@ -271,6 +294,21 @@ local register_chatcommand_table = {
 			local wieldname = wielditem:get_name()
 			advanced_market.data.log = advanced_market.data.log .. wieldname
 			local wieldcount = wielditem:get_count()
+			if not advanced_market.check_params(
+				name,
+				function (params)
+					if wieldname == "" then
+						return false,[[
+						ERROR: cannot sell empty item.]]
+					end
+					if not tonumber(params[2]) or
+						not (tonumber(params[2]) >= 1) then
+						return false,[[
+						ERROR: incorrect price.]]
+					end
+					return true
+				end,
+				t) then return end
 			advanced_market.order(name,wieldname,wieldcount,tonumber(t[2]),"sell")
 			player:set_wielded_item(ItemStack(""))
 		end
@@ -281,6 +319,13 @@ local register_chatcommand_table = {
 			minetest.chat_send_player(name,wieldname)
 		end
 		if t[1] == "cancelorder" then
+			--need to access advanced_market, so check_params isn't used
+			if not tonumber(t[2]) or
+				not advanced_market.data.orders[tonumber(t[2])] then
+				minetest.chat_send_player(name,[[
+				ERROR: no such order.]])
+				do return end
+			end
 			advanced_market.cancel_order(tonumber(t[2]))
 		end
 		if t[1] == "vieworder" then
