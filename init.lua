@@ -286,76 +286,81 @@ local register_chatcommand_table = {
 					return true
 				end,
 				t) then return end
-			advanced_market.order(name,t[2],math.floor(tonumber(t[3])),math.floor(tonumber(t[4])),"buy")
-		end
-		if t[1] == "sell" then
-			local player = minetest.get_player_by_name(name)
-			local wielditem = player:get_wielded_item()
-			local wieldname = wielditem:get_name()
-			advanced_market.data.log = advanced_market.data.log .. wieldname
-			local wieldcount = wielditem:get_count()
-			if not advanced_market.check_params(
-				name,
-				function (params)
-					if wieldname == "" then
-						return false,[[
-						ERROR: cannot sell empty item.]]
-					end
-					if not tonumber(params[2]) or
-						not (tonumber(params[2]) >= 1) then
-						return false,[[
-						ERROR: incorrect price.]]
-					end
-					return true
-				end,
-				t) then return end
-			advanced_market.order(name,wieldname,wieldcount,tonumber(t[2]),"sell")
-			player:set_wielded_item(ItemStack(""))
-		end
-		if t[1] == "getname" then
-			local player = minetest.get_player_by_name(name)
-			local wielditem = player:get_wielded_item()
-			local wieldname = wielditem:get_name()
-			minetest.chat_send_player(name,wieldname)
-		end
-		if t[1] == "cancelorder" then
-			--need to access advanced_market, so check_params isn't used
-			if not tonumber(t[2]) or
-				not advanced_market.data.orders[tonumber(t[2])] then
-				minetest.chat_send_player(name,[[
-				ERROR: no such order.]])
-				do return end
+				advanced_market.order(name,t[2],math.floor(tonumber(t[3])),math.floor(tonumber(t[4])),"buy")
 			end
-			advanced_market.cancel_order(tonumber(t[2]))
-		end
-		if t[1] == "vieworder" then
-			minetest.chat_send_player(name,advanced_market.view_orders(name))
-		end
-		if t[1] == "viewlog" then
-			minetest.chat_send_player(name,advanced_market.data.log)
-		end
-		if t[1] == "viewstack" then
-			minetest.chat_send_player(name,minetest.serialize(advanced_market.data.stacks[t[2]]))
-		end
-		if t[1] == "viewbuffer" then
-			minetest.chat_send_player(name,minetest.serialize(advanced_market.data.buffers[name]))
-		end
-		if t[1] == "refreshbuffer" then
-			local player = minetest.get_player_by_name(name)
-			local playerinv = player:get_inventory()
-			for k,v in pairs(advanced_market.data.buffers[name].into.items) do
-				playerinv:add_item("main",ItemStack(tostring(k).." "..tostring(v)))
-				advanced_market.data.buffers[name].into.items[k] = nil
+			if t[1] == "sell" then
+				local player = minetest.get_player_by_name(name)
+				local wielditem = player:get_wielded_item()
+				local wieldname = wielditem:get_name()
+				advanced_market.data.log = advanced_market.data.log .. wieldname
+				local wieldcount = wielditem:get_count()
+				if not advanced_market.check_params(
+					name,
+					function (params)
+						if wieldname == "" then
+							return false,[[
+							ERROR: cannot sell empty item.]]
+						end
+						if not tonumber(params[2]) or
+							not (tonumber(params[2]) >= 1) then
+							return false,[[
+							ERROR: incorrect price.]]
+						end
+						return true
+					end,
+					t) then return end
+					advanced_market.order(name,wieldname,wieldcount,tonumber(t[2]),"sell")
+					player:set_wielded_item(ItemStack(""))
+				end
+				if t[1] == "getname" then
+					local player = minetest.get_player_by_name(name)
+					local wielditem = player:get_wielded_item()
+					local wieldname = wielditem:get_name()
+					minetest.chat_send_player(name,wieldname)
+				end
+				if t[1] == "cancelorder" then
+					--need to access advanced_market, so check_params isn't used
+					if not tonumber(t[2]) or
+						not advanced_market.data.orders[tonumber(t[2])] then
+						minetest.chat_send_player(name,[[
+						ERROR: no such order.]])
+						do return end
+					end
+					if name ~= advanced_market.data.orders[tonumber(t[2])].orderer then
+						minetest.chat_send_player(name,[[
+						ERROR: it's not your order]])
+						do return end
+					end
+					advanced_market.cancel_order(tonumber(t[2]))
+				end
+				if t[1] == "vieworder" then
+					minetest.chat_send_player(name,advanced_market.view_orders(name))
+				end
+				if t[1] == "viewlog" then
+					minetest.chat_send_player(name,advanced_market.data.log)
+				end
+				if t[1] == "viewstack" then
+					minetest.chat_send_player(name,minetest.serialize(advanced_market.data.stacks[t[2]]))
+				end
+				if t[1] == "viewbuffer" then
+					minetest.chat_send_player(name,minetest.serialize(advanced_market.data.buffers[name]))
+				end
+				if t[1] == "refreshbuffer" then
+					local player = minetest.get_player_by_name(name)
+					local playerinv = player:get_inventory()
+					for k,v in pairs(advanced_market.data.buffers[name].into.items) do
+						playerinv:add_item("main",ItemStack(tostring(k).." "..tostring(v)))
+						advanced_market.data.buffers[name].into.items[k] = nil
+					end
+					money.set_money(name,money.get_money(name) + advanced_market.data.buffers[name].into.money)
+					advanced_market.data.buffers[name].into.money = 0
+				end
+				advanced_market.data.log = advanced_market.data.log .. "\n"
+				advanced_market.save_data()
 			end
-			money.set_money(name,money.get_money(name) + advanced_market.data.buffers[name].into.money)
-			advanced_market.data.buffers[name].into.money = 0
-		end
-		advanced_market.data.log = advanced_market.data.log .. "\n"
-		advanced_market.save_data()
-	end
-}
-minetest.register_chatcommand("advanced_market", register_chatcommand_table)
+		}
+		minetest.register_chatcommand("advanced_market", register_chatcommand_table)
 
-minetest.register_chatcommand("am", register_chatcommand_table)
+		minetest.register_chatcommand("am", register_chatcommand_table)
 
-minetest.register_chatcommand("amarket", register_chatcommand_table)
+		minetest.register_chatcommand("amarket", register_chatcommand_table)
