@@ -271,6 +271,9 @@ local register_chatcommand_table = {
 	func = function(name,param)
 		advanced_market.data.log = (advanced_market.data.log or "") .. name .. " , " .. param .. ";"
 		local t = string.split(param, " ")
+		if t[1] == nil then
+				minetest.chat_send_player(name,[[buy <item> <amount> <price> | sell <price> | viewstack <item> | viewbuffer | refreshbuffer | getname | viewlog | cancelorder <ordernumber>]])
+		end
 		if t[1] == "buy" then
 			if not advanced_market.check_params(
 				name,
@@ -283,6 +286,7 @@ local register_chatcommand_table = {
 						ERROR: amount and/or price is not correct number
 						]]
 					end
+					minetest.chat_send_player(name,[[Order submitted succesfully.]])
 					return true
 				end,
 				t) then return end
@@ -306,6 +310,7 @@ local register_chatcommand_table = {
 							return false,[[
 							ERROR: incorrect price.]]
 						end
+						minetest.chat_send_player(name,[[Order submitted succesfully.]])
 						return true
 					end,
 					t) then return end
@@ -332,6 +337,7 @@ local register_chatcommand_table = {
 						do return end
 					end
 					advanced_market.cancel_order(tonumber(t[2]))
+					minetest.chat_send_player(name,[[Order cancelled succesfully.]])
 				end
 				if t[1] == "vieworder" then
 					minetest.chat_send_player(name,advanced_market.view_orders(name))
@@ -354,6 +360,7 @@ local register_chatcommand_table = {
 					end
 					money.set_money(name,money.get_money(name) + advanced_market.data.buffers[name].into.money)
 					advanced_market.data.buffers[name].into.money = 0
+				minetest.chat_send_player(name,[[Buffer refreshed succesfully.]])
 				end
 				advanced_market.data.log = advanced_market.data.log .. "\n"
 				advanced_market.save_data()
