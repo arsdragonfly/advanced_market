@@ -136,6 +136,8 @@ function advanced_market.search_for_target_order_in_stack(item,price,ordertype)
 		return false
 	end
 	local best_order_number = 0
+	local target_ordertype = ""
+	local best_price = 0
 	if ordertype == "buy" then
 		target_ordertype = "sell"
 	else
@@ -199,7 +201,7 @@ function advanced_market.transact(order_number,target_order_number,item)
 		--set the money and item in buffers
 		orderer_buffer.out.money = orderer_buffer.out.money - transaction_amount * price
 		target_orderer_buffer.into.money = target_orderer_buffer.into.money + transaction_amount * price
-		if order_price ~= price then --the orderer offered a surplus amount of money
+		if orderer_price ~= price then --the orderer offered a surplus amount of money
 			orderer_buffer.out.money = orderer_buffer.out.money - transaction_amount * (orderer_price - price)
 			orderer_buffer.into.money = orderer_buffer.into.money + transaction_amount * (orderer_price - price)
 		end
