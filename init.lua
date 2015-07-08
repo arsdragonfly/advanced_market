@@ -79,6 +79,7 @@ function advanced_market.order(orderer,item,amount,price,ordertype)
 	if ordertype == "buy" then
 		buffer.out.money =  buffer.out.money + amount * price
 		money.set_money(orderer,money.get_money(orderer) - amount * price)
+		buffer.out.items[item] = nil -- the previous buffer initializing was unnecessary; prevent creating garbage data.
 	else -- ordertype is sell
 		buffer.out.items[item] = buffer.out.items[item] + amount
 	end
@@ -96,6 +97,7 @@ function advanced_market.order(orderer,item,amount,price,ordertype)
 		end
 	end
 	advanced_market.save_data()
+	return true
 end
 
 function advanced_market.save_order(order_number,orderer,item,amount,price,ordertype,amount_left)
@@ -206,9 +208,8 @@ function advanced_market.transact(order_number,target_order_number,item)
 			orderer_buffer.into.money = orderer_buffer.into.money + transaction_amount * (orderer_price - price)
 		end
 		orderer_buffer.into.items[item] = orderer_buffer.into.items[item] + transaction_amount
-		if orderer_buffer.into.items[item] == 0 then orderer_buffer.into.items[item] = nil end
 		target_orderer_buffer.out.items[item] = target_orderer_buffer.out.items[item] - transaction_amount
-		if orderer_buffer.out.items[item] == 0 then orderer_buffer.out.items[item] = nil end
+		if target_orderer_buffer.out.items[item] == 0 then target_orderer_buffer.out.items[item] = nil end
 	else --ordertype is sell
 		--set the money and item in buffers
 		orderer_buffer.into.money = orderer_buffer.into.money + transaction_amount * price
@@ -216,7 +217,6 @@ function advanced_market.transact(order_number,target_order_number,item)
 		orderer_buffer.out.items[item] = orderer_buffer.out.items[item] - transaction_amount
 		if orderer_buffer.out.items[item] == 0 then orderer_buffer.out.items[item] = nil end
 		target_orderer_buffer.into.items[item] = target_orderer_buffer.into.items[item] + transaction_amount
-		if orderer_buffer.into.items[item] == 0 then orderer_buffer.into.items[item] = nil end
 	end
 	advanced_market.save_data()
 end
@@ -241,6 +241,7 @@ function advanced_market.cancel_order(order_number)
 		if buffer.into.items[itemname] == nil then buffer.into.items[itemname] = 0 end
 		buffer.into.items[itemname] = buffer.into.items[itemname] + amount_left
 		buffer.out.items[itemname] = buffer.into.items[itemname] - amount_left
+		if buffer.out.items[itemname] == 0 then buffer.out.items[itemname] = nil end
 	end
 	advanced_market.data.orders[order_number].amount_left = 0
 	advanced_market.save_data()
@@ -288,11 +289,14 @@ local register_chatcommand_table = {
 						ERROR: amount and/or price is not correct number
 						]]
 					end
-					minetest.chat_send_player(name,[[Order submitted succesfully.]])
 					return true
 				end,
 				t) then return end
-				advanced_market.order(name,t[2],math.floor(tonumber(t[3])),math.floor(tonumber(t[4])),"buy")
+				if not advanced_market.order(name,t[2],math.floor(tonumber(t[3])),math.floor(tonumber(t[4])),"buy") then
+					minetest.chat_send_player(name,[[ERROR: you don't have enough money.]])
+				else
+					minetest.chat_send_player(name,[[Order submitted succesfully.]])
+				end
 			end
 			if t[1] == "sell" then
 				local player = minetest.get_player_by_name(name)
