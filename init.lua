@@ -79,7 +79,7 @@ function advanced_market.order(orderer,item,amount,price,ordertype)
 	if ordertype == "buy" then
 		buffer.out.money =  buffer.out.money + amount * price
 		money.set_money(orderer,money.get_money(orderer) - amount * price)
-		buffer.out.items[item] = nil -- the previous buffer initializing was unnecessary; prevent creating garbage data.
+		if buffer.out.items[item] == 0 then buffer.out.items[item] = nil end -- the previous buffer initializing was unnecessary; prevent creating garbage data.
 	else -- ordertype is sell
 		buffer.out.items[item] = buffer.out.items[item] + amount
 	end
@@ -361,12 +361,17 @@ local register_chatcommand_table = {
 					local player = minetest.get_player_by_name(name)
 					local playerinv = player:get_inventory()
 					for k,v in pairs(advanced_market.data.buffers[name].into.items) do
-						playerinv:add_item("main",ItemStack(tostring(k).." "..tostring(v)))
-						advanced_market.data.buffers[name].into.items[k] = nil
+						if playerinv:room_for_item("main",ItemStack(tostring(k).." "..tostring(v))) then
+							playerinv:add_item("main",ItemStack(tostring(k).." "..tostring(v)))
+							advanced_market.data.buffers[name].into.items[k] = nil
+						else
+							minetest.chat_send_player(name,[[WARNING: There's no room in your inventory for more items.]])
+							break
+						end
 					end
 					money.set_money(name,money.get_money(name) + advanced_market.data.buffers[name].into.money)
 					advanced_market.data.buffers[name].into.money = 0
-				minetest.chat_send_player(name,[[Buffer refreshed succesfully.]])
+					minetest.chat_send_player(name,[[Buffer refreshed succesfully.]])
 				end
 				advanced_market.data.log = advanced_market.data.log .. "\n"
 				advanced_market.save_data()
