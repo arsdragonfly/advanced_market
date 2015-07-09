@@ -1,0 +1,11 @@
+buy <item> <amount> <price> | sell <price> | viewstack <item> | viewbuffer | refreshbuffer | getname | viewlog | cancelorder <ordernumber> = buy <物品名> <数量> <价格> :用于买入物品。| sell <价格> :用于卖出物品。| viewstack <物品名> :查看这个物品现有的订单。| viewbuffer :查看你的暂存区。| refreshbuffer :刷新你的暂存区，把该拿的拿回来。| getname :得到你手里拿着的物品的名字，用于交易命令。| viewlog :查看记录。| cancelorder <订单号> :取消订单。
+ERROR: amount and/or price is not correct number. = 错误：数量和/或价格不是正确的数字。
+ERROR: you don't have enough money. = 错误：你的钱不够。
+Order submitted succesfully. = 订单成功发送。
+ERROR: cannot sell empty item. = 错误：不能卖空物品。
+ERROR: incorrect price. = 错误：价格错误。
+ERROR: no such order. = 错误：没有此订单。
+ERROR: it's not your order. = 错误：这不是你的订单。
+Order cancelled succesfully. = 订单成功取消。
+WARNING: There's no room in your inventory for more items. = 警告：你的物品栏没有足够的空间放下更多的物品。
+Buffer refreshed succesfully. = 暂存区成功刷新。

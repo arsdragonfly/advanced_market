@@ -1,0 +1,11 @@
+buy <item> <amount> <price> | sell <price> | viewstack <item> | viewbuffer | refreshbuffer | getname | viewlog | cancelorder <ordernumber> =
+ERROR: amount and/or price is not correct number. =
+ERROR: you don't have enough money. =
+Order submitted succesfully. =
+ERROR: cannot sell empty item. =
+ERROR: incorrect price. =
+ERROR: no such order. =
+ERROR: it's not your order. =
+Order cancelled succesfully. =
+WARNING: There's no room in your inventory for more items. =
+Buffer refreshed succesfully. =

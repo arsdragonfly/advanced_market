@@ -1,9 +1,17 @@
---[[
+--
 --Advanced market mod by arsdragonfly
---]]
+--
 
 advanced_market = {}
 advanced_market.data = {}
+
+local S
+if (minetest.get_modpath("intllib")) then
+  dofile(minetest.get_modpath("intllib").."/intllib.lua")
+  S = intllib.Getter(minetest.get_current_modname())
+else
+  S = function ( s ) return s end
+end
 
 function advanced_market.save_data()
 	if advanced_market.data == nil then
@@ -275,7 +283,7 @@ local register_chatcommand_table = {
 		advanced_market.data.log = (advanced_market.data.log or "") .. name .. " , " .. param .. ";"
 		local t = string.split(param, " ")
 		if t[1] == nil then
-				minetest.chat_send_player(name,[[buy <item> <amount> <price> | sell <price> | viewstack <item> | viewbuffer | refreshbuffer | getname | viewlog | cancelorder <ordernumber>]])
+				minetest.chat_send_player(name,S([[buy <item> <amount> <price> | sell <price> | viewstack <item> | viewbuffer | refreshbuffer | getname | viewlog | cancelorder <ordernumber>]]))
 		end
 		if t[1] == "buy" then
 			if not advanced_market.check_params(
@@ -285,17 +293,15 @@ local register_chatcommand_table = {
 						not tonumber(params[4]) or
 						not ((tonumber(params[3])) >= 1) or
 						not ((tonumber(params[4])) >= 1) then
-						return false,[[
-						ERROR: amount and/or price is not correct number
-						]]
+						return false,S([[ERROR: amount and/or price is not correct number.]])
 					end
 					return true
 				end,
 				t) then return end
 				if not advanced_market.order(name,t[2],math.floor(tonumber(t[3])),math.floor(tonumber(t[4])),"buy") then
-					minetest.chat_send_player(name,[[ERROR: you don't have enough money.]])
+					minetest.chat_send_player(name,S([[ERROR: you don't have enough money.]]))
 				else
-					minetest.chat_send_player(name,[[Order submitted succesfully.]])
+					minetest.chat_send_player(name,S([[Order submitted succesfully.]]))
 				end
 			end
 			if t[1] == "sell" then
@@ -308,15 +314,13 @@ local register_chatcommand_table = {
 					name,
 					function (params)
 						if wieldname == "" then
-							return false,[[
-							ERROR: cannot sell empty item.]]
+							return false,S([[ERROR: cannot sell empty item.]])
 						end
 						if not tonumber(params[2]) or
 							not (tonumber(params[2]) >= 1) then
-							return false,[[
-							ERROR: incorrect price.]]
+							return false,S([[ERROR: incorrect price.]])
 						end
-						minetest.chat_send_player(name,[[Order submitted succesfully.]])
+						minetest.chat_send_player(name,S([[Order submitted succesfully.]]))
 						return true
 					end,
 					t) then return end
@@ -333,17 +337,15 @@ local register_chatcommand_table = {
 					--need to access advanced_market, so check_params isn't used
 					if not tonumber(t[2]) or
 						not advanced_market.data.orders[tonumber(t[2])] then
-						minetest.chat_send_player(name,[[
-						ERROR: no such order.]])
+						minetest.chat_send_player(name,S([[ERROR: no such order.]]))
 						do return end
 					end
 					if name ~= advanced_market.data.orders[tonumber(t[2])].orderer then
-						minetest.chat_send_player(name,[[
-						ERROR: it's not your order]])
+						minetest.chat_send_player(name,S([[ERROR: it's not your order.]]))
 						do return end
 					end
 					advanced_market.cancel_order(tonumber(t[2]))
-					minetest.chat_send_player(name,[[Order cancelled succesfully.]])
+					minetest.chat_send_player(name,S([[Order cancelled succesfully.]]))
 				end
 				if t[1] == "vieworder" then
 					minetest.chat_send_player(name,advanced_market.view_orders(name))
@@ -365,13 +367,13 @@ local register_chatcommand_table = {
 							playerinv:add_item("main",ItemStack(tostring(k).." "..tostring(v)))
 							advanced_market.data.buffers[name].into.items[k] = nil
 						else
-							minetest.chat_send_player(name,[[WARNING: There's no room in your inventory for more items.]])
+							minetest.chat_send_player(name,S([[WARNING: There's no room in your inventory for more items.]]))
 							break
 						end
 					end
 					money.set_money(name,money.get_money(name) + advanced_market.data.buffers[name].into.money)
 					advanced_market.data.buffers[name].into.money = 0
-					minetest.chat_send_player(name,[[Buffer refreshed succesfully.]])
+					minetest.chat_send_player(name,S([[Buffer refreshed succesfully.]]))
 				end
 				advanced_market.data.log = advanced_market.data.log .. "\n"
 				advanced_market.save_data()
